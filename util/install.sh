@@ -4,7 +4,7 @@
 # Original author: Brandon Heller
 
 # Fail on error
-set -e
+set -x
 
 # Fail on unset var usage
 set -o nounset
@@ -35,7 +35,8 @@ if [ "$ARCH" = "i686" ]; then ARCH="i386"; fi
 
 test -e /etc/debian_version && DIST="Debian"
 grep Ubuntu /etc/lsb-release &> /dev/null && DIST="Ubuntu"
-if [ "$DIST" = "Ubuntu" ] || [ "$DIST" = "Debian" ]; then
+grep Linuxmint /etc/lsb-release &> /dev/null && DIST="Linuxmint"
+if [ "$DIST" = "Ubuntu" ] || [ "$DIST" = "Debian" ] || [ "$DIST" = "Linuxmint" ]; then
     # Truly non-interactive apt-get installation
     install='sudo DEBIAN_FRONTEND=noninteractive apt-get -y -q install'
     remove='sudo DEBIAN_FRONTEND=noninteractive apt-get -y -q remove'
@@ -83,7 +84,7 @@ KERNEL_HEADERS=kernel-headers-${KERNEL_NAME}
 # Treat Raspbian as Debian
 [ "$DIST" = 'Raspbian' ] && DIST='Debian'
 
-DISTS='Ubuntu|Debian|Fedora|RedHatEnterpriseServer|SUSE LINUX'
+DISTS='Ubuntu|Debian|Fedora|RedHatEnterpriseServer|SUSE LINUX|Linuxmint'
 if ! echo $DIST | egrep "$DISTS" >/dev/null; then
     echo "Install.sh currently only supports $DISTS."
     exit 1
@@ -178,6 +179,9 @@ function mn_deps {
         # Starting around 20.04, installing pyflakes instead of pyflakes3
         # causes Python 2 to be installed, which is exactly NOT what we want.
         if [ "$DIST" = "Ubuntu" -a `expr $RELEASE '>=' 20.04` = "1" ]; then
+                pf=pyflakes3
+        fi
+	if [ "$DIST" = "Linuxmint" -a `expr $RELEASE '>=' 20.04` = "1" ]; then
                 pf=pyflakes3
         fi
         # Debian 11 "bullseye" renamed
@@ -348,7 +352,7 @@ function ubuntuOvs {
     OVS_SRC=$BUILD_DIR/openvswitch
     OVS_TARBALL_LOC=http://openvswitch.org/releases
 
-    if ! echo "$DIST" | egrep "Ubuntu|Debian" > /dev/null; then
+    if ! echo "$DIST" | egrep "Ubuntu|Debian|Linuxmint" > /dev/null; then
         echo "OS must be Ubuntu or Debian"
         $cd BUILD_DIR
         return
@@ -522,7 +526,7 @@ function ryu {
 
     # install Ryu dependencies"
     $install autoconf automake g++ libtool python make
-    if [ "$DIST" = "Ubuntu" -o "$DIST" = "Debian" ]; then
+    if [ "$DIST" = "Ubuntu" -o "$DIST" = "Debian" -o "$DIST" = "Linuxmint"]; then
         $install gcc ${PYPKG}-pip ${PYPKG}-dev libffi-dev libssl-dev \
             libxml2-dev libxslt1-dev zlib1g-dev
     fi
@@ -550,7 +554,7 @@ function nox {
 		swig libssl-dev make
     if [ "$DIST" = "Debian" ]; then
         $install libboost1.35-dev
-    elif [ "$DIST" = "Ubuntu" ]; then
+    elif [ "$DIST" = "Ubuntu" -o "$DIST" = "Linuxmint"]; then
         $install ${PYPKG}-dev libboost-dev
         $install libboost-filesystem-dev
         $install libboost-test-dev
@@ -598,7 +602,7 @@ function nox13 {
         swig libssl-dev make
     if [ "$DIST" = "Debian" ]; then
         $install libboost1.35-dev
-    elif [ "$DIST" = "Ubuntu" ]; then
+    elif [ "$DIST" = "Ubuntu" -o "$DIST" = "Linuxmint"]; then
         $install ${PYPKG}-dev libboost-dev
         $install libboost-filesystem-dev
         $install libboost-test-dev
